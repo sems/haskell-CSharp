@@ -18,6 +18,8 @@ data Token = POpen    | PClose      -- parentheses     ()
            | UpperId   String       -- uppercase identifiers
            | LowerId   String       -- lowercase identifiers
            | ConstInt  Int
+           | ConstBool Bool
+           | ConstChar Char
            deriving (Eq, Show)
 
 ----- Begin Lexer -----
@@ -30,6 +32,8 @@ lexToken = greedyChoice
              , lexEnum StdType stdTypes
              , lexEnum Operator operators
              , lexConstInt
+             , lexConstBool
+             , lexConstChar
              , lexLowerId
              , lexUpperId
              ]
@@ -70,6 +74,14 @@ operators = ["+", "-", "*", "/", "%", "&&", "||", "^", "<=", "<", ">=", ">", "==
 
 lexConstInt :: Parser Char Token
 lexConstInt = ConstInt . read <$> greedy1 (satisfy isDigit)
+
+-- ex 1
+lexConstBool :: Parser Char Token
+lexConstBool = ConstBool . read <$> (token "False" <|> token "True") -- Just like above :)
+
+-- ex 1 
+lexConstChar :: Parser Char Token
+lexConstChar = ConstChar <$> (symbol '\'' *> anySymbol <* symbol '\'')
 
 lexLowerId :: Parser Char Token
 lexLowerId = (\x xs -> LowerId (x:xs)) <$> satisfy isLower <*> greedy (satisfy isAlphaNum)
@@ -112,6 +124,8 @@ sLowerId = (\(LowerId x) -> x) <$> satisfy isLowerId
 sConst :: Parser Token Int
 sConst  = (\(ConstInt x) -> x) <$> satisfy isConst
   where isConst (ConstInt  _) = True
+        isConst (ConstBool _) = True
+        isConst (ConstChar _) = True
         isConst _             = False
 
 sOperator :: Parser Token String

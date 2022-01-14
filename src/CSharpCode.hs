@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module CSharpCode where
 
 import Prelude hiding (LT, GT, EQ)
@@ -7,6 +8,7 @@ import CSharpLex
 import CSharpGram
 import CSharpAlgebra
 import SSM
+import Data.Char (ord)
 
 {-
   This file contains a starting point for the code generation which should handle very simple programs.
@@ -66,8 +68,13 @@ codeStatement = (fStatDecl, fStatExpr, fStatIf, fStatWhile, fStatReturn, fStatBl
 
 codeExpr = (fExprCon, fExprVar, fExprOp)
   where
-    fExprCon :: Int -> E
-    fExprCon n va = [LDC n]
+    -- fExprCon :: Token -> a -> b -> Code
+    fExprCon :: Token -> E
+    fExprCon (ConstBool True) va = [LDC 1]
+    fExprCon (ConstBool False) va = [LDC 0]
+    fExprCon (ConstChar c) va = [LDC (ord c)]
+    fExprCon (ConstInt i) va = [LDC i]
+
 
     fExprVar :: String -> E
     fExprVar x va = let loc = 42 in case va of
