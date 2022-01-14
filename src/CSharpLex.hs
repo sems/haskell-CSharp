@@ -20,6 +20,7 @@ data Token = POpen    | PClose      -- parentheses     ()
            | ConstInt  Int
            | ConstBool Bool
            | ConstChar Char
+           | SingleComment
            deriving (Eq, Show)
 
 ----- Begin Lexer -----
@@ -83,6 +84,10 @@ lexConstBool = ConstBool . read <$> (token "False" <|> token "True") -- Just lik
 lexConstChar :: Parser Char Token
 lexConstChar = ConstChar <$> (symbol '\'' *> anySymbol <* symbol '\'')
 
+-- ex 3 
+lexSingleComment :: Parser Char ()
+lexSingleComment = () <$ token "//" <* many (satisfy (/= '\n'))
+
 lexLowerId :: Parser Char Token
 lexLowerId = (\x xs -> LowerId (x:xs)) <$> satisfy isLower <*> greedy (satisfy isAlphaNum)
 
@@ -90,8 +95,8 @@ lexUpperId :: Parser Char Token
 lexUpperId = (\x xs -> UpperId (x:xs)) <$> satisfy isUpper <*> greedy (satisfy isAlphaNum)
 
 
-lexWhiteSpace :: Parser Char String
-lexWhiteSpace = greedy (satisfy isSpace)
+lexWhiteSpace :: Parser Char ()
+lexWhiteSpace = () <$ greedy (satisfy isSpace) <|> lexSingleComment
 
 keyword :: String -> Parser Char String
 keyword [] = succeed ""
