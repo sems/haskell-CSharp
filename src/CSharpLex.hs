@@ -78,7 +78,11 @@ lexConstInt = ConstInt . read <$> greedy1 (satisfy isDigit)
 
 -- ex 1
 lexConstBool :: Parser Char Token
-lexConstBool = ConstBool . read <$> (token "False" <|> token "True") -- Just like above :)
+lexConstBool = ConstBool . getBool <$> (token "false" <|> token "true") -- Just like above :)
+  where getBool "false" = False
+        getBool "true"  = True
+
+
 
 -- ex 1 
 lexConstChar :: Parser Char Token
