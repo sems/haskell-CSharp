@@ -121,12 +121,20 @@ sLowerId = (\(LowerId x) -> x) <$> satisfy isLowerId
   where isLowerId (LowerId _) = True
         isLowerId _           = False
 
-sConst :: Parser Token Int
-sConst  = (\(ConstInt x) -> x) <$> satisfy isConst
+sConstI :: Parser Token Int
+sConstI  = (\(ConstInt x) -> x) <$> satisfy isConst
   where isConst (ConstInt  _) = True
-        isConst (ConstBool _) = True
-        isConst (ConstChar _) = True
         isConst _             = False
+
+sConstB :: Parser Token Bool
+sConstB  = (\(ConstBool x) ->  x) <$> satisfy isConst
+  where isConst (ConstBool  _) = True
+        isConst _              = False
+
+sConstC :: Parser Token Char
+sConstC  = (\(ConstChar x) ->  x) <$> satisfy isConst
+  where isConst (ConstChar  _) = True
+        isConst _              = False
 
 sOperator :: Parser Token String
 sOperator = (\(Operator x) -> x) <$> satisfy isOperator

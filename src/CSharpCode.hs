@@ -66,15 +66,16 @@ codeStatement = (fStatDecl, fStatExpr, fStatIf, fStatWhile, fStatReturn, fStatBl
     fStatBlock :: [S] -> S
     fStatBlock = concat
 
-codeExpr = (fExprCon, fExprVar, fExprOp)
+codeExpr = (fExprInt, fExprBool, fExprChar, fExprVar, fExprOp)
   where
-    -- fExprCon :: Token -> a -> b -> Code
-    fExprCon :: Token -> E
-    fExprCon (ConstBool True) va = [LDC 1]
-    fExprCon (ConstBool False) va = [LDC 0]
-    fExprCon (ConstChar c) va = [LDC (ord c)]
-    fExprCon (ConstInt i) va = [LDC i]
 
+    fExprInt :: Int -> E
+    fExprInt n va = [LDC n]
+    
+    fExprBool True va = [LDC 1]
+    fExprBool _    va = [LDC 0]
+
+    fExprChar c va = [LDC (ord c)]
 
     fExprVar :: String -> E
     fExprVar x va = let loc = 42 in case va of
