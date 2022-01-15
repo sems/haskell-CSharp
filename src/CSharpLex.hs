@@ -82,15 +82,13 @@ lexConstBool = ConstBool . getBool <$> (token "false" <|> token "true") -- Just 
   where getBool "false" = False
         getBool "true"  = True
 
-
-
 -- ex 1 
 lexConstChar :: Parser Char Token
 lexConstChar = ConstChar <$> (symbol '\'' *> anySymbol <* symbol '\'')
 
 -- ex 3 
-lexSingleComment :: Parser Char ()
-lexSingleComment = () <$ token "//" <* many (satisfy (/= '\n'))
+lexSingleComment :: Parser Char String
+lexSingleComment = "" <$ token "//" <* many (satisfy (/= '\n'))
 
 lexLowerId :: Parser Char Token
 lexLowerId = (\x xs -> LowerId (x:xs)) <$> satisfy isLower <*> greedy (satisfy isAlphaNum)
@@ -99,8 +97,10 @@ lexUpperId :: Parser Char Token
 lexUpperId = (\x xs -> UpperId (x:xs)) <$> satisfy isUpper <*> greedy (satisfy isAlphaNum)
 
 
-lexWhiteSpace :: Parser Char ()
-lexWhiteSpace = () <$ greedy (satisfy isSpace) <|> lexSingleComment
+lexWhiteSpace :: Parser Char String
+lexWhiteSpace = concat <$> greedy (lexSingleComment <|> (f <$> satisfy isSpace) )
+  where 
+    f x = [x]
 
 keyword :: String -> Parser Char String
 keyword [] = succeed ""
