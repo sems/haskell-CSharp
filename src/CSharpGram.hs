@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module CSharpGram where
 
 import ParseLib.Abstract hiding (braced, bracketed, parenthesised)
@@ -74,8 +75,37 @@ pExprSimple =  ExprConstInt  <$> sConstI
            <|> ExprVar       <$> sLowerId
            <|> parenthesised pExpr
 
+-- ex 2
+{-
+     Prio of operators
+     1. =  
+     2. || and ^ 
+     3. &&
+     4. <=, <, >=, >, ==, !=, =
+     5. -, +
+     6. *, /, % 
+-}
+
+-- pExpr :: Parser Token Expr
+-- pExpr = chainr pExprSimple (ExprOper <$> sOperator)
+
 pExpr :: Parser Token Expr
-pExpr = chainr pExprSimple (ExprOper <$> sOperator)
+pExpr =  ExprOper "="  <$> pExpr <* symbol (Operator "=")  <*> pExpr
+     <|> ExprOper "||" <$> pExpr <* symbol (Operator "||") <*> pExpr
+     <|> ExprOper "^"  <$> pExpr <* symbol (Operator "^")  <*> pExpr
+     <|> ExprOper "&&" <$> pExpr <* symbol (Operator "&&") <*> pExpr
+     <|> ExprOper "<=" <$> pExpr <* symbol (Operator "<=") <*> pExpr
+     <|> ExprOper "<"  <$> pExpr <* symbol (Operator "<")  <*> pExpr
+     <|> ExprOper ">=" <$> pExpr <* symbol (Operator ">=") <*> pExpr
+     <|> ExprOper ">"  <$> pExpr <* symbol (Operator ">")  <*> pExpr
+     <|> ExprOper "==" <$> pExpr <* symbol (Operator "==") <*> pExpr
+     <|> ExprOper "!=" <$> pExpr <* symbol (Operator "!=") <*> pExpr
+     <|> ExprOper "-"  <$> pExpr <* symbol (Operator "-")  <*> pExpr
+     <|> ExprOper "+"  <$> pExpr <* symbol (Operator "+")  <*> pExpr
+     <|> ExprOper "*"  <$> pExpr <* symbol (Operator "*")  <*> pExpr
+     <|> ExprOper "/"  <$> pExpr <* symbol (Operator "/")  <*> pExpr
+     <|> ExprOper "%"  <$> pExpr <* symbol (Operator "%")  <*> pExpr
+     <|> pExprSimple
 
 pDecl :: Parser Token Decl
 pDecl = Decl <$> pType <*> sLowerId

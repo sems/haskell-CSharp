@@ -1,8 +1,9 @@
 class Hello {
     void main() {
-        print(3 * 5 + 2);
+        int i;
+        i = 3 * 5 + 2;
 
-        print(3 + 2 == 1);
+        // bool i = 3 + 2 == 1;
     }
 }
 
