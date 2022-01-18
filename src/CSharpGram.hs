@@ -91,21 +91,21 @@ pExpr :: Parser Token Expr
 pExpr = pExpr1
 
 op1, op2, op3, op4, op5, op6, op7, op8, op9 :: Parser Token (Expr->Expr->Expr)
-op1 = ExprOper "=" <$ symbol (Operator "=")
+op1 = ExprOper "="  <$ symbol (Operator "=")
 op2 = ExprOper "||" <$ symbol (Operator "||")
 op3 = ExprOper "^"  <$ symbol (Operator "^") 
 op4 = ExprOper "&&" <$ symbol (Operator "&&")
 op5 = ExprOper ">"  <$ symbol (Operator ">") 
-     <|> ExprOper "<" <$ symbol (Operator "<") 
+     <|> ExprOper "<"  <$ symbol (Operator "<") 
      <|> ExprOper ">=" <$ symbol (Operator ">=") 
      <|> ExprOper "<=" <$ symbol (Operator "<=")
 op6 = ExprOper "!=" <$ symbol (Operator "!=") <|> ExprOper "==" <$ symbol (Operator "==")
-op7 = ExprOper "-"  <$ symbol (Operator "-") <|> ExprOper "+" <$ symbol (Operator "+") 
-op8 = ExprOper "*"  <$ symbol (Operator "*") <|> ExprOper "/"  <$ symbol (Operator "/") 
-op9 = ExprOper "/"  <$ symbol (Operator "/") <|> ExprOper "%"  <$ symbol (Operator "%") 
+op7 = ExprOper "-"  <$ symbol (Operator "-")  <|> ExprOper "+"  <$ symbol (Operator "+") 
+op8 = ExprOper "*"  <$ symbol (Operator "*")  <|> ExprOper "/"  <$ symbol (Operator "/") 
+op9 = ExprOper "/"  <$ symbol (Operator "/")  <|> ExprOper "%"  <$ symbol (Operator "%") 
 
 pExpr1, pExpr2, pExpr3, pExpr4, pExpr5, pExpr6, pExpr7, pExpr8, pExpr9 :: Parser Token Expr
-pExpr1  = chainr pExpr2 op1
+pExpr1 = chainr pExpr2 op1
 pExpr2 = chainl pExpr3 op2
 pExpr3 = chainl pExpr4 op3
 pExpr4 = chainl pExpr5 op4
