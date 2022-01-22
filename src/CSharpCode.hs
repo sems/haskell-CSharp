@@ -71,7 +71,7 @@ codeExpr = (fExprInt, fExprBool, fExprChar, fExprVar, fExprOp)
 
     fExprInt :: Int -> E
     fExprInt n va = [LDC n]
-    
+
     fExprBool True va = [LDC 1]
     fExprBool _    va = [LDC 0]
 
@@ -84,7 +84,17 @@ codeExpr = (fExprInt, fExprBool, fExprChar, fExprVar, fExprOp)
 
     fExprOp :: String -> E -> E -> E
     fExprOp "=" e1 e2 va = e2 Value ++ [LDS 0] ++ e1 Address ++ [STA 0]
-    fExprOp op  e1 e2 va = e1 Value ++ e2 Value ++ [opCodes M.! op]
+    -- ex 7
+    -- The first expresion is put twice on the stack for eval. and the result. (for && and || )
+    fExprOp "&&" e1 e2 va = e1' ++ e1' ++ [BRF (codeSize e2'+1)] ++ e2' ++ [AND]
+      where
+        e1' = e1 Value
+        e2' = e2 Value
+    fExprOp "||" e1 e2 va = e1' ++ e1' ++ [BRT (codeSize e2'+1)] ++ e2' ++ [OR]
+      where
+        e1' = e1 Value
+        e2' = e2 Value
+    fExprOp op e1 e2 va = e1 Value ++ e2 Value ++ [opCodes M.! op]
       where
         opCodes :: M.Map String Instr
         opCodes = M.fromList [ ("+", ADD), ("-",  SUB), ("*", MUL), ("/", DIV), ("%", MOD)
