@@ -18,6 +18,7 @@ data Stat = StatDecl   Decl
           | StatWhile  Expr Stat
           | StatReturn Expr
           | StatBlock  [Stat]
+          | StatMeth   String [Expr]
           deriving Show
 
 data Expr = ExprConstInt  Int
@@ -62,6 +63,7 @@ pStat =  StatExpr <$> pExpr <*  sSemi
      <|> (\w x y z -> StatBlock [w,StatWhile x (StatBlock [z,y]) ] )  <$ symbol KeyFor <* symbol POpen <*>  exprdecls <* sSemi <*> pExpr  <* sSemi <*> exprdecls <* symbol PClose <*> pStat
      <|> StatWhile  <$ symbol KeyWhile  <*> parenthesised pExpr <*> pStat
      <|> StatReturn <$ symbol KeyReturn <*> pExpr               <*  sSemi
+     <|> StatMeth <$> sLowerId <*> parenthesised (option (listOf pExpr (symbol Comma)) []) <* sSemi
      <|> pBlock
      where optionalElse = option (symbol KeyElse *> pStat) (StatBlock [])
            exprdecls = StatExpr <$> pExpr <|> StatDecl <$> pDecl 

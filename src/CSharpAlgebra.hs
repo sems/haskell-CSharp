@@ -19,6 +19,7 @@ type CSharpAlgebra clas memb stat expr             --
       , expr -> stat -> stat  -> stat              --       | StatIf     Expr Stat Stat
       , expr -> stat          -> stat              --       | StatWhile  Expr Stat
       , expr                  -> stat              --       | StatReturn Expr
+      , String -> [expr]      -> stat              --       | StatMeth [expr]]
       , [stat]                -> stat              --       | StatBlock  [Stat]
       )                                            --
                                                    --
@@ -31,7 +32,7 @@ type CSharpAlgebra clas memb stat expr             --
     )                                              --
 
 foldCSharp :: CSharpAlgebra clas memb stat expr -> Class -> clas
-foldCSharp (c, (md,mm), (sd,se,si,sw,sr,sb), (ei,eb,ec,ev,eo)) = fClas
+foldCSharp (c, (md,mm), (sd,se,si,sw,sr,sm,sb), (ei,eb,ec,ev,eo)) = fClas
   where
     fClas (Class         t ms)     = c  t (map fMemb ms)
     fMemb (MemberD       d)        = md d
@@ -41,6 +42,7 @@ foldCSharp (c, (md,mm), (sd,se,si,sw,sr,sb), (ei,eb,ec,ev,eo)) = fClas
     fStat (StatIf        e s1 s2)  = si (fExpr e) (fStat s1) (fStat s2)
     fStat (StatWhile     e s1)     = sw (fExpr e) (fStat s1)
     fStat (StatReturn    e)        = sr (fExpr e)
+    fStat (StatMeth      s es)     = sm s (map fExpr es)
     fStat (StatBlock     ss)       = sb (map fStat ss)
     fExpr (ExprConstInt  int)      = ei int
     fExpr (ExprConstBool bool)     = eb bool

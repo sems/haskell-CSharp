@@ -5,8 +5,7 @@ class Hello {
         // bool i;
         // i = 3 + 2 == 1;
         
-        bool b;
-        b = 1 == 1 || true;
+        1 == 1 || true;
     }
 }
 

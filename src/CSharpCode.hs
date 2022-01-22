@@ -40,7 +40,7 @@ codeMember = (fMembDecl, fMembMeth)
     fMembMeth :: Type -> String -> [Decl] -> S -> M
     fMembMeth t x ps s = [LABEL x] ++ s ++ [RET]
 
-codeStatement = (fStatDecl, fStatExpr, fStatIf, fStatWhile, fStatReturn, fStatBlock)
+codeStatement = (fStatDecl, fStatExpr, fStatIf, fStatWhile, fStatReturn, fStatMeth, fStatBlock)
   where
     fStatDecl :: Decl -> S
     fStatDecl d = []
@@ -66,6 +66,10 @@ codeStatement = (fStatDecl, fStatExpr, fStatIf, fStatWhile, fStatReturn, fStatBl
     fStatBlock :: [S] -> S
     fStatBlock = concat
 
+    fStatMeth :: String -> [E] -> Code
+    fStatMeth "print" es = concatMap (\x -> x Value) es ++ [TRAP 0] 
+    fStatMeth x       es = concatMap (\x -> x Value) es ++ [Bsr x] ++ [LDR R3] 
+
 codeExpr = (fExprInt, fExprBool, fExprChar, fExprVar, fExprOp)
   where
 
@@ -88,10 +92,12 @@ codeExpr = (fExprInt, fExprBool, fExprChar, fExprVar, fExprOp)
     -- The first expresion is put twice on the stack for eval. and the result. (for && and || )
     fExprOp "&&" e1 e2 va = e1' ++ e1' ++ [BRF (codeSize e2'+1)] ++ e2' ++ [AND]
       where
+        e1', e2' :: Code
         e1' = e1 Value
         e2' = e2 Value
     fExprOp "||" e1 e2 va = e1' ++ e1' ++ [BRT (codeSize e2'+1)] ++ e2' ++ [OR]
       where
+        e1', e2' :: Code
         e1' = e1 Value
         e2' = e2 Value
     fExprOp op e1 e2 va = e1 Value ++ e2 Value ++ [opCodes M.! op]
