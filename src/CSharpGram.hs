@@ -63,12 +63,15 @@ pStat =  StatExpr <$> pExpr <*  sSemi
      <|> (\w x y z -> StatBlock [w,StatWhile x (StatBlock [z,y]) ] )  <$ symbol KeyFor <* symbol POpen <*>  exprdecls <* sSemi <*> pExpr  <* sSemi <*> exprdecls <* symbol PClose <*> pStat
      <|> StatWhile  <$ symbol KeyWhile  <*> parenthesised pExpr <*> pStat
      <|> StatReturn <$ symbol KeyReturn <*> pExpr               <*  sSemi
-     <|> StatMeth <$> sLowerId <*> parenthesised (option (listOf pExpr (symbol Comma)) []) <* sSemi
+     <|> StatMeth <$> sLowerId <*> parenthesised methArgs <* sSemi
      <|> pBlock
-     where optionalElse = option (symbol KeyElse *> pStat) (StatBlock [])
-           exprdecls = StatExpr <$> pExpr <|> StatDecl <$> pDecl 
-                    <|> (\x y -> StatBlock [StatExpr x , y]) <$> pExpr <* sComma <*> exprdecls
-                    <|> (\x y -> StatBlock [StatDecl x , y]) <$> pDecl <* sComma <*> exprdecls
+     where 
+          methArgs :: Parser Token [Expr]
+          methArgs = option (listOf pExpr (symbol Comma)) []
+          optionalElse = option (symbol KeyElse *> pStat) (StatBlock [])
+          exprdecls = StatExpr <$> pExpr <|> StatDecl <$> pDecl 
+               <|> (\x y -> StatBlock [StatExpr x , y]) <$> pExpr <* sComma <*> exprdecls
+               <|> (\x y -> StatBlock [StatDecl x , y]) <$> pDecl <* sComma <*> exprdecls
 
 pExprSimple :: Parser Token Expr
 pExprSimple =  ExprConstInt  <$> sConstI
