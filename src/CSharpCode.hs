@@ -15,11 +15,12 @@ import Data.Char (ord)
 -}
 
 -- The types that we generate for each datatype: Our type variables for the algebra
-type C = Code                   -- Class
-type M = Code                   -- Member
-type S = Code                   -- Statement
-type E = ValueOrAddress -> Code -- Expression
+type C = Code                    -- Class
+type M = Code                    -- Member
+type S = Env -> (Code, Env)                     -- Statement
+type E = ValueOrAddress -> Env -> Code -- Expression
 
+type Env = M.Map String Int
 
 codeAlgebra :: CSharpAlgebra C M S E
 codeAlgebra =
@@ -36,71 +37,75 @@ codeMember = (fMembDecl, fMembMeth)
   where
     fMembDecl :: Decl -> M
     fMembDecl d = []
-
+                              -- create env
     fMembMeth :: Type -> String -> [Decl] -> S -> M
-    fMembMeth t x ps s = [LABEL x] ++ s ++ [RET]
+    fMembMeth t x ps s = ( [LABEL x] ++ (fst $ s  M.empty )++ [RET])
 
 codeStatement = (fStatDecl, fStatExpr, fStatIf, fStatWhile, fStatReturn, fStatMeth, fStatBlock)
-  where
+  where       -- add to env
     fStatDecl :: Decl -> S
-    fStatDecl d = []
+    fStatDecl (Decl _ d) env = ([],M.insert d (M.size env + 1) env) -- add to env
 
     fStatExpr :: E -> S
-    fStatExpr e = e Value ++ [pop]
+    fStatExpr e env = (e Value env ++ [pop],env)
 
     fStatIf :: E -> S -> S -> S
-    fStatIf e s1 s2 = c ++ [BRF (n1 + 2)] ++ s1 ++ [BRA n2] ++ s2
+    fStatIf e s1 s2 env = (c ++ [BRF (n1 + 2)] ++ (fst $ s1 env) ++ [BRA n2] ++ (fst $ s2 env), env)
         where
-            c        = e Value
-            (n1, n2) = (codeSize s1, codeSize s2)
+            c        = e Value env
+            (n1, n2) = (codeSize $ fst $ s1 env, codeSize $ fst $ s2 env)
 
     fStatWhile :: E -> S -> S
-    fStatWhile e s1 = [BRA n] ++ s1 ++ c ++ [BRT (-(n + k + 2))]
+    fStatWhile e s1 env =( [BRA n] ++ (fst $ s1 env) ++ c ++ [BRT (-(n + k + 2))], env)
         where
-            c = e Value
-            (n, k) = (codeSize s1, codeSize c)
+            c =  e Value env
+            (n, k) = (codeSize $ fst $ s1 env, codeSize c)
 
     fStatReturn :: E -> S
-    fStatReturn e = e Value ++ [pop] ++ [RET]
+    fStatReturn e env = (e Value env ++ [pop] ++ [RET],env)
 
     fStatBlock :: [S] -> S
-    fStatBlock = concat
+    fStatBlock ss env = (handleBlock ss env, env) -- when leaving a block the envirment gets reverted to the state it was in when it entered the block 
+      where handleBlock :: [S] -> Env -> Code
+            handleBlock [] _= [] -- within the block envirment keeps being passed on and (potentially) added on
+            handleBlock (s:ss') env' =  (fst $ s env' )++ handleBlock ss' (snd $ s env')
 
-    fStatMeth :: String -> [E] -> Code
-    fStatMeth "print" es = concatMap (\x -> x Value) es ++ [TRAP 0] 
-    fStatMeth x       es = concatMap (\x -> x Value) es ++ [Bsr x] ++ [LDR R3] 
+  
+    fStatMeth :: String -> [E] -> S
+    fStatMeth "print" es env = (concatMap (\x -> x Value env) es ++ [TRAP 0] ,env)
+    fStatMeth x       es env = (concatMap (\x -> x Value env) es ++ [Bsr x] ++ [LDR R3] ,env)
 
 codeExpr = (fExprInt, fExprBool, fExprChar, fExprVar, fExprOp)
   where
 
     fExprInt :: Int -> E
-    fExprInt n va = [LDC n]
+    fExprInt n va env = [LDC n] 
 
-    fExprBool True va = [LDC 1]
-    fExprBool _    va = [LDC 0]
+    fExprBool True va env = [LDC 1]
+    fExprBool _    va env= [LDC 0]
 
-    fExprChar c va = [LDC (ord c)]
+    fExprChar c va env = [LDC (ord c)]
 
     fExprVar :: String -> E
-    fExprVar x va = let loc = 42 in case va of
+    fExprVar x va env = let loc = 42 in case va of
                                   Value    ->  [LDL  loc]
                                   Address  ->  [LDLA loc]
 
     fExprOp :: String -> E -> E -> E
-    fExprOp "=" e1 e2 va = e2 Value ++ [LDS 0] ++ e1 Address ++ [STA 0]
+    fExprOp "=" e1 e2 va env = e2 Value env ++ [LDS 0] ++ e1 Address env ++ [STA 0]
     -- ex 7
     -- The first expresion is put twice on the stack for eval. and the result. (for && and || )
-    fExprOp "&&" e1 e2 va = e1' ++ e1' ++ [BRF (codeSize e2'+1)] ++ e2' ++ [AND]
+    fExprOp "&&" e1 e2 va env = e1' ++ e1' ++ [BRF (codeSize e2'+1)] ++ e2' ++ [AND]
       where
         e1', e2' :: Code
-        e1' = e1 Value
-        e2' = e2 Value
-    fExprOp "||" e1 e2 va = e1' ++ e1' ++ [BRT (codeSize e2'+1)] ++ e2' ++ [OR]
+        e1' = e1 Value env
+        e2' = e2 Value env
+    fExprOp "||" e1 e2 va env = e1' ++ e1' ++ [BRT (codeSize e2'+1)] ++ e2' ++ [OR]
       where
         e1', e2' :: Code
-        e1' = e1 Value
-        e2' = e2 Value
-    fExprOp op e1 e2 va = e1 Value ++ e2 Value ++ [opCodes M.! op]
+        e1' = e1 Value env
+        e2' = e2 Value env
+    fExprOp op e1 e2 va env = e1 Value env ++ e2 Value env ++ [opCodes M.! op]
       where
         opCodes :: M.Map String Instr
         opCodes = M.fromList [ ("+", ADD), ("-",  SUB), ("*", MUL), ("/", DIV), ("%", MOD)
