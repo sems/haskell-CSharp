@@ -39,7 +39,14 @@ codeMember = (fMembDecl, fMembMeth)
     fMembDecl d = []
 
     fMembMeth :: Type -> String -> [Decl] -> S -> M
-    fMembMeth t x ps s = ([ LABEL x ,LDR MP, LDRR MP SP , AJS 1 ]++(fst $ s  M.empty )++ [LDRR SP MP,STR MP, RET])
+    fMembMeth t x ps s = ([ LABEL x ,LDR MP, LDRR MP SP]  ++ map loadPar ps ++ (fst $ s  env )++ [LDRR SP MP,STR MP, RET])
+      where 
+        env = getPars ps 1
+        getPars :: [Decl] -> Int-> Env
+        getPars [] _ = M.empty 
+        getPars (Decl _ p: ps) i  =  M.insert p i (getPars ps (i + 1))
+        loadPar _ = LDS (-(1 + M.size env))
+        
 
 codeStatement = (fStatDecl, fStatExpr, fStatIf, fStatWhile, fStatReturn, fStatMeth, fStatBlock)
   where       
@@ -71,7 +78,6 @@ codeStatement = (fStatDecl, fStatExpr, fStatIf, fStatWhile, fStatReturn, fStatMe
                 where n = (M.size env' - M.size env)
             handleBlock (s:ss') env' =  (fst $ s env' ) ++ handleBlock ss' (snd $ s env') -- within the block envirment keeps being passed on and (potentially) added on
 
-  
     fStatMeth :: String -> [E] -> S
     fStatMeth "print" es env = (concatMap (\x -> x Value env) es ++ [TRAP 0] ,env)
     fStatMeth x       es env = (concatMap (\x -> x Value env) es ++ [Bsr x] ++ [LDR R3] ,env)
