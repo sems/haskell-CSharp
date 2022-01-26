@@ -31,20 +31,20 @@ codeAlgebra =
     )
 
 codeClass :: String -> [M] -> C
-codeClass c ms = [Bsr "main", HALT] ++ concat ms
+codeClass c ms = [ Bsr "main" , HALT] ++ concat ms
 
 codeMember = (fMembDecl, fMembMeth)
   where
     fMembDecl :: Decl -> M
     fMembDecl d = []
-                              -- create env
+
     fMembMeth :: Type -> String -> [Decl] -> S -> M
-    fMembMeth t x ps s = ( [LABEL x] ++ (fst $ s  M.empty )++ [RET])
+    fMembMeth t x ps s = ([ LABEL x ,LDR MP, LDRR MP SP , AJS 1 ]++(fst $ s  M.empty )++ [LDRR SP MP,STR MP, RET])
 
 codeStatement = (fStatDecl, fStatExpr, fStatIf, fStatWhile, fStatReturn, fStatMeth, fStatBlock)
-  where       -- add to env
+  where       
     fStatDecl :: Decl -> S
-    fStatDecl (Decl _ d) env = ([],M.insert d (M.size env + 1) env) -- add to env
+    fStatDecl (Decl _ d) env = ([AJS 1],M.insert d (M.size env + 1) env) -- add to env
 
     fStatExpr :: E -> S
     fStatExpr e env = (e Value env ++ [pop],env)
@@ -67,8 +67,9 @@ codeStatement = (fStatDecl, fStatExpr, fStatIf, fStatWhile, fStatReturn, fStatMe
     fStatBlock :: [S] -> S
     fStatBlock ss env = (handleBlock ss env, env) -- when leaving a block the envirment gets reverted to the state it was in when it entered the block 
       where handleBlock :: [S] -> Env -> Code
-            handleBlock [] _= [] -- within the block envirment keeps being passed on and (potentially) added on
-            handleBlock (s:ss') env' =  (fst $ s env' )++ handleBlock ss' (snd $ s env')
+            handleBlock [] env' = [STS (- n) ,AJS (- (n- 1) )] -- all vars that have been declared withing a block fall out of bounds when leaving said block
+                where n = (M.size env' - M.size env)
+            handleBlock (s:ss') env' =  (fst $ s env' ) ++ handleBlock ss' (snd $ s env') -- within the block envirment keeps being passed on and (potentially) added on
 
   
     fStatMeth :: String -> [E] -> S
@@ -87,9 +88,9 @@ codeExpr = (fExprInt, fExprBool, fExprChar, fExprVar, fExprOp)
     fExprChar c va env = [LDC (ord c)]
 
     fExprVar :: String -> E
-    fExprVar x va env = let loc = 42 in case va of
-                                  Value    ->  [LDL  loc]
-                                  Address  ->  [LDLA loc]
+    fExprVar x va env = case va of
+                           Value    ->  [LDL ( env M.! x)]
+                           Address  ->  [LDLA ( env M.! x)]
 
     fExprOp :: String -> E -> E -> E
     fExprOp "=" e1 e2 va env = e2 Value env ++ [LDS 0] ++ e1 Address env ++ [STA 0]
