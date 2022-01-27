@@ -39,17 +39,17 @@ codeMember = (fMembDecl, fMembMeth)
     fMembDecl d = []
 
     fMembMeth :: Type -> String -> [Decl] -> S -> M
-    fMembMeth t x ps s = ([ LABEL x ,LDR MP, LDRR MP SP]  ++ map loadPar ps ++ (fst $ s  env )++ [LDRR SP MP,STR MP, RET])
-      where 
+    fMembMeth t x ps s = [ LABEL x ,LDR MP, LDRR MP SP] ++ map loadPar ps ++ fst (s env)++ [LDRR SP MP,STR MP, RET]
+      where
         env = getPars ps 1
         getPars :: [Decl] -> Int-> Env
-        getPars [] _ = M.empty 
+        getPars [] _ = M.empty
         getPars (Decl _ p: ps) i  =  M.insert p i (getPars ps (i + 1))
         loadPar _ = LDS (-(1 + M.size env))
-        
+
 
 codeStatement = (fStatDecl, fStatExpr, fStatIf, fStatWhile, fStatReturn, fStatMeth, fStatBlock)
-  where       
+  where
     fStatDecl :: Decl -> S
     fStatDecl (Decl _ d) env = ([AJS 1],M.insert d (M.size env + 1) env) -- add to env
 
@@ -57,13 +57,13 @@ codeStatement = (fStatDecl, fStatExpr, fStatIf, fStatWhile, fStatReturn, fStatMe
     fStatExpr e env = (e Value env ++ [pop],env)
 
     fStatIf :: E -> S -> S -> S
-    fStatIf e s1 s2 env = (c ++ [BRF (n1 + 2)] ++ (fst $ s1 env) ++ [BRA n2] ++ (fst $ s2 env), env)
+    fStatIf e s1 s2 env = (c ++ [BRF (n1 + 2)] ++ fst (s1 env) ++ [BRA n2] ++ fst (s2 env), env)
         where
             c        = e Value env
             (n1, n2) = (codeSize $ fst $ s1 env, codeSize $ fst $ s2 env)
 
     fStatWhile :: E -> S -> S
-    fStatWhile e s1 env =( [BRA n] ++ (fst $ s1 env) ++ c ++ [BRT (-(n + k + 2))], env)
+    fStatWhile e s1 env =( [BRA n] ++ fst (s1 env) ++ c ++ [BRT (-(n + k + 2))], env)
         where
             c =  e Value env
             (n, k) = (codeSize $ fst $ s1 env, codeSize c)
@@ -75,8 +75,8 @@ codeStatement = (fStatDecl, fStatExpr, fStatIf, fStatWhile, fStatReturn, fStatMe
     fStatBlock ss env = (handleBlock ss env, env) -- when leaving a block the envirment gets reverted to the state it was in when it entered the block 
       where handleBlock :: [S] -> Env -> Code
             handleBlock [] env' = [STS (- n) ,AJS (- (n- 1) )] -- all vars that have been declared withing a block fall out of bounds when leaving said block
-                where n = (M.size env' - M.size env)
-            handleBlock (s:ss') env' =  (fst $ s env' ) ++ handleBlock ss' (snd $ s env') -- within the block envirment keeps being passed on and (potentially) added on
+                where n = M.size env' - M.size env
+            handleBlock (s:ss') env' =  fst (s env') ++ handleBlock ss' (snd $ s env') -- within the block envirment keeps being passed on and (potentially) added on
 
     fStatMeth :: String -> [E] -> S
     fStatMeth "print" es env = (concatMap (\x -> x Value env) es ++ [TRAP 0] ,env)
@@ -86,7 +86,7 @@ codeExpr = (fExprInt, fExprBool, fExprChar, fExprVar, fExprOp)
   where
 
     fExprInt :: Int -> E
-    fExprInt n va env = [LDC n] 
+    fExprInt n va env = [LDC n]
 
     fExprBool True va env = [LDC 1]
     fExprBool _    va env= [LDC 0]
