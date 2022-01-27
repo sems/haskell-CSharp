@@ -82,7 +82,7 @@ codeStatement = (fStatDecl, fStatExpr, fStatIf, fStatWhile, fStatReturn, fStatMe
     fStatMeth "print" es env = (concatMap (\x -> x Value env) es ++ [TRAP 0] ,env)
     fStatMeth x       es env = (concatMap (\x -> x Value env) es ++ [Bsr x] ++ [LDR R3] ,env)
 
-codeExpr = (fExprInt, fExprBool, fExprChar, fExprVar, fExprOp)
+codeExpr = (fExprInt, fExprBool, fExprChar, fExprVar, fExprMeth, fExprOp)
   where
 
     fExprInt :: Int -> E
@@ -97,6 +97,9 @@ codeExpr = (fExprInt, fExprBool, fExprChar, fExprVar, fExprOp)
     fExprVar x va env = case va of
                            Value    ->  [LDL ( env M.! x)]
                            Address  ->  [LDLA ( env M.! x)]
+
+    fExprMeth :: String -> [E] -> E
+    fExprMeth s es va env = []
 
     fExprOp :: String -> E -> E -> E
     fExprOp "=" e1 e2 va env = e2 Value env ++ [LDS 0] ++ e1 Address env ++ [STA 0]

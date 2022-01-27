@@ -25,6 +25,7 @@ data Expr = ExprConstInt  Int
           | ExprConstBool Bool
           | ExprConstChar Char
           | ExprVar       String
+          | ExprMeth      String [Expr]
           | ExprOper      String Expr Expr
           deriving Show
 
@@ -78,7 +79,10 @@ pExprSimple =  ExprConstInt  <$> sConstI
            <|> ExprConstBool <$> sConstB
            <|> ExprConstChar <$> sConstC
            <|> ExprVar       <$> sLowerId
+           <|> ExprMeth <$> sLowerId <*> parenthesised methArgs 
            <|> parenthesised pExpr
+     where  methArgs :: Parser Token [Expr]
+            methArgs = option (listOf pExpr (symbol Comma)) []
 
 -- ex 2
 {-
