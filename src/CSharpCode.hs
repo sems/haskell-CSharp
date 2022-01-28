@@ -39,19 +39,19 @@ codeMember = (fMembDecl, fMembMeth)
     fMembDecl d = []
 
     fMembMeth :: Type -> String -> [Decl] -> S -> M
-    fMembMeth t x ps s = [ LABEL x ,LDR MP, LDRR MP SP] ++ map loadPar ps ++ fst (s env)++ [LDRR SP MP,STR MP, RET]
+    fMembMeth t x ps s = [ LABEL x ,LDR MP, LDRR MP SP] ++ map loadPar ps ++ fst (s env)++ [LDRR SP MP,STR MP, RET] 
       where
         env = getPars ps 1
-        getPars :: [Decl] -> Int-> Env
+        getPars :: [Decl] -> Int-> Env -- put all variables withing a methodes parameters into the envirment
         getPars [] _ = M.empty
         getPars (Decl _ p: ps) i  =  M.insert p i (getPars ps (i + 1))
-        loadPar _ = LDS (-(1 + M.size env))
+        loadPar _ = LDS (-(1 + M.size env)) -- loads the variables from the parameters onto the stack 
 
 
 codeStatement = (fStatDecl, fStatExpr, fStatIf, fStatWhile, fStatReturn, fStatMeth, fStatBlock)
   where
     fStatDecl :: Decl -> S
-    fStatDecl (Decl _ d) env = ([AJS 1],M.insert d (M.size env + 1) env) -- add to env
+    fStatDecl (Decl _ d) env = ([AJS 1],M.insert d (M.size env + 1) env) -- increase space for variables and add to env
 
     fStatExpr :: E -> S
     fStatExpr e env = (e Value env ++ [pop],env)
@@ -69,7 +69,7 @@ codeStatement = (fStatDecl, fStatExpr, fStatIf, fStatWhile, fStatReturn, fStatMe
             (n, k) = (codeSize $ fst $ s1 env, codeSize c)
 
     fStatReturn :: E -> S
-    fStatReturn e env = (e Value env ++ [STR R3, pop] ++ [LDRR SP MP,STR MP,RET],env)
+    fStatReturn e env = (e Value env ++ [STR R3, pop] ++ [LDRR SP MP,STR MP,RET],env) -- if a value is returned it get's put into a register
 
     fStatBlock :: [S] -> S
     fStatBlock ss env = (handleBlock ss env, env) -- when leaving a block the envirment gets reverted to the state it was in when it entered the block 
@@ -79,8 +79,8 @@ codeStatement = (fStatDecl, fStatExpr, fStatIf, fStatWhile, fStatReturn, fStatMe
             handleBlock (s:ss') env' =  fst (s env') ++ handleBlock ss' (snd $ s env') -- within the block envirment keeps being passed on and (potentially) added on
 
     fStatMeth :: String -> [E] -> S
-    fStatMeth "print" es env = (concatMap (\x -> x Value env) es ++ [TRAP 0] ,env)
-    fStatMeth x       es env = (concatMap (\x -> x Value env) es ++ [Bsr x] ++ [LDR R3] ,env)
+    fStatMeth "print" es env = (concatMap (\x -> x Value env) es ++ [TRAP 0] ,env) -- the printe methode is premade into the code
+    fStatMeth x       es env = (concatMap (\x -> x Value env) es ++ [Bsr x]  ,env) 
 
 codeExpr = (fExprInt, fExprBool, fExprChar, fExprVar, fExprMeth, fExprOp)
   where
@@ -88,18 +88,18 @@ codeExpr = (fExprInt, fExprBool, fExprChar, fExprVar, fExprMeth, fExprOp)
     fExprInt :: Int -> E
     fExprInt n va env = [LDC n]
 
-    fExprBool True va env = [LDC 1]
-    fExprBool _    va env= [LDC 0]
+    fExprBool True va env = [LDC 1] -- if a value is true 1 is loaded
+    fExprBool _    va env= [LDC 0]  -- if a value is false 0 is loaded
 
-    fExprChar c va env = [LDC (ord c)]
+    fExprChar c va env = [LDC (ord c)] 
 
     fExprVar :: String -> E
-    fExprVar x va env = case va of
+    fExprVar x va env = case va of -- the position of the wanted variable is found by looking for it's relative position withing the envirment
                            Value    ->  [LDL ( env M.! x)]
                            Address  ->  [LDLA ( env M.! x)]
 
     fExprMeth :: String -> [E] -> E
-    fExprMeth s es va env =  concatMap (\x -> x Value env) es ++ [Bsr s ,LDR R3]
+    fExprMeth s es va env =  concatMap (\x -> x Value env) es ++ [Bsr s ,LDR R3] --a methode that act's as a expr will load the value that's put into r3 after it's done which will be the return value
 
     fExprOp :: String -> E -> E -> E
     fExprOp "=" e1 e2 va env = e2 Value env ++ [LDS 0] ++ e1 Address env ++ [STA 0]

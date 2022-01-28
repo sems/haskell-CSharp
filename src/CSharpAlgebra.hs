@@ -19,16 +19,16 @@ type CSharpAlgebra clas memb stat expr             --
       , expr -> stat -> stat  -> stat              --       | StatIf     Expr Stat Stat
       , expr -> stat          -> stat              --       | StatWhile  Expr Stat
       , expr                  -> stat              --       | StatReturn Expr
-      , String -> [expr]      -> stat              --       | StatMeth [expr]]
+      , String -> [expr]      -> stat              --       | StatMeth   String [Expr]]
       , [stat]                -> stat              --       | StatBlock  [Stat]
       )                                            --
                                                    --
-    , ( Int                     -> expr            --  Expr = ExprConstInt Int
+    , ( Int                     -> expr            --  Expr = ExprConstInt  Int
       , Bool                    -> expr            --       | ExprConstBool Bool
       , Char                    -> expr            --       | ExprConstChar Char
-      , String                  -> expr            --       | ExprVar    String
-      , String -> [expr]        -> expr
-      , String -> expr -> expr  -> expr            --       | ExprOper   String Expr Expr
+      , String                  -> expr            --       | ExprVar       String
+      , String -> [expr]        -> expr            --       | ExprMeth      String [Expr]
+      , String -> expr -> expr  -> expr            --       | ExprOper      String Expr Expr
       )                                            --
     )                                              --
 

@@ -60,11 +60,11 @@ pStatDecl =  pStat
 
 pStat :: Parser Token Stat
 pStat =  StatIf     <$ symbol KeyIf     <*> parenthesised pExpr <*> pStat <*> optionalElse
-     <|> (\(StatBlock w) x y z -> StatBlock (w ++ [StatWhile x (StatBlock [z,y]) ]) )  <$ symbol KeyFor <* symbol POpen <*>  exprdecls <* sSemi <*> pExpr  <* sSemi <*> exprdecls <* symbol PClose <*> pStat
+     <|> (\(StatBlock w) x y z -> StatBlock (w ++ [StatWhile x (StatBlock [z,y]) ]) )  <$ symbol KeyFor <* symbol POpen <*>  exprdecls <* sSemi <*> pExpr  <* sSemi <*> exprdecls <* symbol PClose <*> pStat --parsing of the for loop
      <|> StatWhile  <$ symbol KeyWhile  <*> parenthesised pExpr <*> pStat
      <|> StatReturn <$ symbol KeyReturn <*> pExpr               <*  sSemi
      <|> StatMeth <$> sLowerId <*> parenthesised methArgs <* sSemi
-     <|> StatExpr <$> pExpr <*  sSemi
+     <|> StatExpr <$> pExpr <*  sSemi -- statexpr is put after statmeth to prevent a methode from being registered as an expr when that's not the case
      <|> pBlock
      where 
           methArgs :: Parser Token [Expr]
