@@ -12,6 +12,10 @@ import SSM
 import CSharpCode
 import Prelude hiding ((<$), (<*), (*>))
 
+--  
+-- Amber Bosman (6717845)
+-- Sem Spanhaak (7593589)
+
 
 main :: IO ()
 main = do
