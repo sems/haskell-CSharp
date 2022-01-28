@@ -69,7 +69,7 @@ codeStatement = (fStatDecl, fStatExpr, fStatIf, fStatWhile, fStatReturn, fStatMe
             (n, k) = (codeSize $ fst $ s1 env, codeSize c)
 
     fStatReturn :: E -> S
-    fStatReturn e env = (e Value env ++ [pop] ++ [RET],env)
+    fStatReturn e env = (e Value env ++ [STR R3, pop] ++ [LDRR SP MP,STR MP,RET],env)
 
     fStatBlock :: [S] -> S
     fStatBlock ss env = (handleBlock ss env, env) -- when leaving a block the envirment gets reverted to the state it was in when it entered the block 
@@ -99,7 +99,7 @@ codeExpr = (fExprInt, fExprBool, fExprChar, fExprVar, fExprMeth, fExprOp)
                            Address  ->  [LDLA ( env M.! x)]
 
     fExprMeth :: String -> [E] -> E
-    fExprMeth s es va env = []
+    fExprMeth s es va env =  concatMap (\x -> x Value env) es ++ [Bsr s ,LDR R3]
 
     fExprOp :: String -> E -> E -> E
     fExprOp "=" e1 e2 va env = e2 Value env ++ [LDS 0] ++ e1 Address env ++ [STA 0]

@@ -59,12 +59,12 @@ pStatDecl =  pStat
          <|> StatDecl <$> pDeclSemi
 
 pStat :: Parser Token Stat
-pStat =  StatExpr <$> pExpr <*  sSemi
-     <|> StatIf     <$ symbol KeyIf     <*> parenthesised pExpr <*> pStat <*> optionalElse
+pStat =  StatIf     <$ symbol KeyIf     <*> parenthesised pExpr <*> pStat <*> optionalElse
      <|> (\(StatBlock w) x y z -> StatBlock (w ++ [StatWhile x (StatBlock [z,y]) ]) )  <$ symbol KeyFor <* symbol POpen <*>  exprdecls <* sSemi <*> pExpr  <* sSemi <*> exprdecls <* symbol PClose <*> pStat
      <|> StatWhile  <$ symbol KeyWhile  <*> parenthesised pExpr <*> pStat
      <|> StatReturn <$ symbol KeyReturn <*> pExpr               <*  sSemi
      <|> StatMeth <$> sLowerId <*> parenthesised methArgs <* sSemi
+     <|> StatExpr <$> pExpr <*  sSemi
      <|> pBlock
      where 
           methArgs :: Parser Token [Expr]
